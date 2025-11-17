@@ -1,56 +1,27 @@
 <!DOCTYPE html>
-<html lang="en">
-
+<html lang="pt-BR">
 <head>
-    <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>App de Conferência</title>
+    <meta charset="UTF-8">
+    <title>Scanner de Código de Barras</title>
     <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
-    <h2>Conferência / Leitura de Código</h2>
 
+<div class="container">
+    <h2>📦 Controle de Estoque</h2>
 
-    <div class="card">
-        <label>Leitor automático (recomendado em mobile):</label>
-        <div class="row">
-            <button id="btnStartScan">Iniciar scanner</button>
-            <button id="btnStopScan">Parar</button>
-            <button id="btnManual">Entrada manual</button>
-        </div>
-        <p class="small">Se o navegador suportar a API BarcodeDetector, o app tentará ler o código direto da câmera.
-            Caso contrário, use entrada manual.</p>
-        <video id="video" autoplay playsinline></video>
-    </div>
+    <video id="camera" autoplay></video>
 
+    <p><b>Última Leitura:</b> <span id="output">---</span></p>
 
-    <div class="card">
-        <label for="barcodeInput">Código lido / inserido:</label>
-        <input type="text" id="barcodeInput" placeholder="Nenhum código lido ainda">
-        <div style="margin-top:8px">
-            <input type="checkbox" id="conferido" checked> <label for="conferido"
-                style="display:inline">Conferido</label>
-        </div>
-    </div>
+    <button id="btnStart">📷 Iniciar Leitor</button>
+    <button id="btnPhoto">📸 Tirar Foto</button>
+    <button id="btnEnviar">✔ Enviar</button>
 
+    <canvas id="snapshot" style="display:none;"></canvas>
+</div>
 
-    <div class="card">
-        <label>Foto (opcional)</label>
-        <div class="row">
-            <button id="btnCapture">Capturar foto (câmera)</button>
-            <input type="file" id="fileInput" accept="image/*" capture="environment">
-        </div>
-        <canvas id="canvas"></canvas>
-        <div id="previewWrap"></div>
-    </div>
-
-
-    <div class="card">
-        <button id="btnSend">Enviar para a planilha</button>
-        <p id="status" class="small"></p>
-    </div>
-
-    <script src="script.js"></script>
+<script src="https://unpkg.com/@zxing/browser@latest"></script>
+<script src="script.js"></script>
 </body>
-
 </html>
