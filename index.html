@@ -1,44 +1,46 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>App Conferência</title>
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
 
-<h2>📦 Conferência de Produtos</h2>
+    <h2>📦 Conferência de Produtos</h2>
 
-<div class="box">
-    <video id="camera" autoplay playsinline></video>
+    <div class="box">
+        <video id="camera" autoplay playsinline></video>
 
-    <button id="btnStart">📷 Iniciar Scanner</button>
+        <button id="btnStart">📷 Iniciar Scanner</button>
 
-    <p>Último código detectado:</p>
-    <input id="manualInput" placeholder="Digite manualmente se necessário">
+        <p>Último código detectado:</p>
+        <input id="manualInput" placeholder="Digite manualmente se necessário">
 
-    <button id="btnUseManual">Usar valor digitado</button>
+        <button id="btnUseManual">Usar valor digitado</button>
 
-    <p><strong>Lido:</strong> <span id="output">---</span></p>
-</div>
+        <p><strong>Lido:</strong> <span id="output">---</span></p>
+    </div>
 
-<div class="box">
-    <button id="btnPhoto">📸 Tirar Foto</button>
-    <canvas id="snapshot" style="display:none;"></canvas>
-</div>
+    <div class="box">
+        <button id="btnPhoto">📸 Tirar Foto</button>
+        <canvas id="snapshot" style="display:none;"></canvas>
+    </div>
 
-<button id="btnSend" class="send">✔ Enviar Conferência</button>
+    <button id="btnSend" class="send">✔ Enviar Conferência</button>
 
-<p id="status"></p>
+    <p id="status"></p>
 
-<!-- Beep -->
-<audio id="beepSound">
-    <source src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg" type="audio/ogg">
-</audio>
+    <!-- BEEP -->
+    <audio id="beepSound">
+        <source src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg" type="audio/ogg">
+    </audio>
 
-<script src="https://unpkg.com/@zxing/browser@latest"></script>
-<script src="script.js"></script>
-
+    <script src="https://unpkg.com/@zxing/browser@latest"></script>
+    <script src="script.js"></script>
 </body>
+
 </html>
