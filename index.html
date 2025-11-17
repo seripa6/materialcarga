@@ -1,46 +1,51 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
-
+<html lang="pt-br">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>App Conferência</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Scanner de Código</title>
     <link rel="stylesheet" href="style.css">
+
+    <!-- Biblioteca ZXING -->
+    <script src="https://unpkg.com/@zxing/browser@latest"></script>
 </head>
 
 <body>
 
-    <h2>📦 Conferência de Produtos</h2>
+<h2>📦 Leitor de Código + Envio para Planilha</h2>
 
-    <div class="box">
-        <video id="camera" autoplay playsinline></video>
+<div class="box">
+    <button id="btnStart">Iniciar Leitura</button>
+    <button id="btnStop">Parar</button>
+</div>
 
-        <button id="btnStart">📷 Iniciar Scanner</button>
+<video id="camera" style="width:100%;border:1px solid #ccc;"></video>
 
-        <p>Último código detectado:</p>
-        <input id="manualInput" placeholder="Digite manualmente se necessário">
+<div class="reader">
+    <h3>Resultado:</h3>
+    <p id="output">---</p>
+</div>
 
-        <button id="btnUseManual">Usar valor digitado</button>
+<hr>
 
-        <p><strong>Lido:</strong> <span id="output">---</span></p>
-    </div>
+<h3>Entrada Manual</h3>
+<input id="manualInput" type="text" placeholder="Digite o código">
+<button id="btnUseManual">Enviar Manual</button>
 
-    <div class="box">
-        <button id="btnPhoto">📸 Tirar Foto</button>
-        <canvas id="snapshot" style="display:none;"></canvas>
-    </div>
+<hr>
 
-    <button id="btnSend" class="send">✔ Enviar Conferência</button>
+<h3>Capturar Foto</h3>
+<button id="btnPhoto">📸 Capturar Foto</button>
+<canvas id="snapshot" hidden></canvas>
 
-    <p id="status"></p>
+<hr>
 
-    <!-- BEEP -->
-    <audio id="beepSound">
-        <source src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg" type="audio/ogg">
-    </audio>
+<button id="btnSend">📤 Enviar para Planilha</button>
 
-    <script src="https://unpkg.com/@zxing/browser@latest"></script>
-    <script src="script.js"></script>
+<p id="status"></p>
+
+<audio id="beepSound" src="https://www.soundjay.com/buttons/sounds/beep-07.mp3" preload="auto"></audio>
+
+<script src="script.js"></script>
 </body>
-
 </html>
