@@ -2,26 +2,43 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Scanner de Código de Barras</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>App Conferência</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<div class="container">
-    <h2>📦 Controle de Estoque</h2>
+<h2>📦 Conferência de Produtos</h2>
 
-    <video id="camera" autoplay></video>
+<div class="box">
+    <video id="camera" autoplay playsinline></video>
 
-    <p><b>Última Leitura:</b> <span id="output">---</span></p>
+    <button id="btnStart">📷 Iniciar Scanner</button>
 
-    <button id="btnStart">📷 Iniciar Leitor</button>
+    <p>Último código detectado:</p>
+    <input id="manualInput" placeholder="Digite manualmente se necessário">
+
+    <button id="btnUseManual">Usar valor digitado</button>
+
+    <p><strong>Lido:</strong> <span id="output">---</span></p>
+</div>
+
+<div class="box">
     <button id="btnPhoto">📸 Tirar Foto</button>
-    <button id="btnEnviar">✔ Enviar</button>
-
     <canvas id="snapshot" style="display:none;"></canvas>
 </div>
 
+<button id="btnSend" class="send">✔ Enviar Conferência</button>
+
+<p id="status"></p>
+
+<!-- Beep -->
+<audio id="beepSound">
+    <source src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg" type="audio/ogg">
+</audio>
+
 <script src="https://unpkg.com/@zxing/browser@latest"></script>
 <script src="script.js"></script>
+
 </body>
 </html>
