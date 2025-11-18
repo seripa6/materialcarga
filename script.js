@@ -1,78 +1,71 @@
 // Substitua pela URL do seu web app implantado no Google Apps Script
 const URL_SCRIPT = "https://script.google.com/macros/s/AKfycbwHqrVpsKxgQGbP8A_RsQitW4BwkKtRMjGEKnT9y-ssBmZzyFpwR2Gdc7sJ6Kd711RK/exec";
 
-let scannerInitialized = false;
-let detectionActive = false;
+let codeReader = null;
+let stream = null;
 
-document.getElementById('start-camera-btn').addEventListener('click', function () {
-    if (!scannerInitialized) {
-        startCamera();
-    }
-});
+// Botões
+document.getElementById('start-camera-btn').addEventListener('click', startScanner);
+document.getElementById('stop-scan-btn').addEventListener('click', stopScanner);
 
-document.getElementById('detect-btn').addEventListener('click', function () {
-    if (scannerInitialized && !detectionActive) {
-        startDetection();
-    }
-});
-
-document.getElementById('stop-scan-btn').addEventListener('click', function () {
-    stopCamera();
-});
-
-function startCamera() {
+// -------------------------
+// INICIAR LEITOR ZXING
+// -------------------------
+async function startScanner() {
     document.getElementById('scanner-container').style.display = 'block';
-    scannerInitialized = true;
 
-    Quagga.init({
-        inputStream: {
-            name: "Live",
-            type: "LiveStream",
-            target: document.querySelector('#scanner-video'),
-            constraints: {
-                facingMode: "environment"
+    codeReader = new ZXing.BrowserMultiFormatReader();
+
+    try {
+        const videoElement = document.getElementById('scanner-video');
+
+        // Abre a câmera traseira
+        stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: "environment" }
+        });
+
+        videoElement.srcObject = stream;
+        videoElement.play();
+
+        // Começa a leitura contínua
+        codeReader.decodeFromVideoDevice(null, videoElement, (result, err) => {
+            if (result) {
+                document.getElementById('numeroChamado').value = result.text;
+                document.getElementById('mensagem').innerText = "Código Detectado!";
+                document.getElementById('mensagem').style.color = "green";
+                stopScanner();
             }
-        },
-        decoder: {
-            readers: ["code_128_reader", "ean_reader", "code_39_reader"]
-        },
-        locate: true
-    }, function(err) {
-        if (err) {
-            document.getElementById('mensagem').innerText =
-                "Erro ao iniciar câmera: " + err;
-            document.getElementById('mensagem').style.color = "red";
-            return;
-        }
+        });
 
-        Quagga.start();
-        document.getElementById('mensagem').innerText =
-            "Câmera iniciada. Clique em Detectar Código.";
+        document.getElementById('mensagem').innerText = "Aponte a câmera para o código de barras...";
         document.getElementById('mensagem').style.color = "blue";
-    });
+
+    } catch (error) {
+        document.getElementById('mensagem').innerText = "Erro ao acessar câmera: " + error;
+        document.getElementById('mensagem').style.color = "red";
+    }
 }
 
-function startDetection() {
-    detectionActive = true;
-    Quagga.onDetected(function (result) {
-        const code = result.codeResult.code;
-        document.getElementById('numeroChamado').value = code;
-        stopCamera();
-        document.getElementById('mensagem').innerText = 'Código detectado: ' + code;
-        document.getElementById('mensagem').style.color = 'green';
-    });
-    document.getElementById('mensagem').innerText = 'Detecção ativada. Aponte para o código de barras.';
-    document.getElementById('mensagem').style.color = 'orange';
-}
+// -------------------------
+// PARAR O SCANNER
+// -------------------------
+function stopScanner() {
+    if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+        stream = null;
+    }
 
-function stopCamera() {
-    Quagga.stop();
+    if (codeReader) {
+        codeReader.reset();
+        codeReader = null;
+    }
+
     document.getElementById('scanner-container').style.display = 'none';
-    scannerInitialized = false;
-    detectionActive = false;
-    document.getElementById('mensagem').innerText = '';
 }
 
+// -------------------------
+// ENVIO DO FORMULÁRIO
+// -------------------------
 document.getElementById('formulario').addEventListener('submit', function (e) {
     e.preventDefault();
 
@@ -80,16 +73,15 @@ document.getElementById('formulario').addEventListener('submit', function (e) {
     const nome = document.getElementById('nome').value;
     const motivo = document.getElementById('motivo').value;
 
-    // Enviar dados via POST
     fetch(URL_SCRIPT, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
         },
         body: new URLSearchParams({
-            numeroChamado: numeroChamado,
-            nome: nome,
-            motivo: motivo
+            numeroChamado,
+            nome,
+            motivo
         })
     })
         .then(response => response.json())
@@ -100,9 +92,11 @@ document.getElementById('formulario').addEventListener('submit', function (e) {
                 document.getElementById('formulario').reset();
             } else {
                 document.getElementById('mensagem').innerText = 'Erro: ' + data.mensagem;
+                document.getElementById('mensagem').style.color = "red";
             }
         })
         .catch(error => {
             document.getElementById('mensagem').innerText = 'Erro na requisição: ' + error.message;
+            document.getElementById('mensagem').style.color = "red";
         });
 });

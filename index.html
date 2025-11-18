@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Formulário de Conferência</title>
-    <link rel="stylesheet" href="style.css"> 
+    <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
     <h2>Formulário de Conferência</h2>
     <form id="formulario">
@@ -24,15 +26,13 @@
     <div id="mensagem"></div>
 
     <div id="scanner-container">
-        <video id="scanner-video"></video>
-        <div class="scanner-buttons">
-            <button type="button" id="detect-btn">Detectar Código</button>
-            <button type="button" id="stop-scan-btn">Parar Câmera</button>
-        </div>
+        <video id="scanner-video" style="width:100%;border:1px solid #ccc;"></video><br>
+        <button type="button" id="stop-scan-btn">Parar Câmera</button>
     </div>
 
     <!-- Incluir QuaggaJS via CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/quagga@0.12.1/dist/quagga.min.js"></script>
-    <script src="script.js"></script> 
+    <script src="https://unpkg.com/@zxing/library@latest"></script>
+    <script src="script.js"></script>
 </body>
+
 </html>
