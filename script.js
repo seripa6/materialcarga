@@ -1,5 +1,7 @@
 // Substitua pela URL do seu web app implantado no Google Apps Script
 const URL_SCRIPT = "https://script.google.com/macros/s/AKfycbwHqrVpsKxgQGbP8A_RsQitW4BwkKtRMjGEKnT9y-ssBmZzyFpwR2Gdc7sJ6Kd711RK/exec";
+const beep = new Audio("https://www.soundjay.com/buttons/sounds/beep-07.mp3");
+
 
 let codeReader = null;
 let stream = null;
@@ -28,7 +30,15 @@ const zoomControl = document.getElementById("zoomControl");
 async function startScanner() {
     document.getElementById('scanner-container').style.display = 'block';
 
-    codeReader = new ZXing.BrowserMultiFormatReader();
+    codeReader = new ZXing.BrowserMultiFormatReader(undefined, {
+        tryHarder: true, // melhora leitura de códigos pequenos
+        formats: [
+            ZXing.BarcodeFormat.CODE_128,
+            ZXing.BarcodeFormat.CODE_39,
+            ZXing.BarcodeFormat.EAN_13,
+            ZXing.BarcodeFormat.EAN_8
+        ]
+    });
 
     try {
         const videoElement = document.getElementById('scanner-video');
@@ -57,6 +67,8 @@ async function startScanner() {
         // Começa leitura contínua
         codeReader.decodeFromVideoDevice(null, videoElement, (result, err) => {
             if (result) {
+                beep.play(); // <-- TOCA O BEEP
+
                 document.getElementById('numeroChamado').value = result.text;
                 document.getElementById('mensagem').innerText = "Código Detectado!";
                 document.getElementById('mensagem').style.color = "green";
@@ -85,7 +97,11 @@ flashBtn.addEventListener("click", async () => {
     torchOn = !torchOn;
 
     await track.applyConstraints({
-        advanced: [{ torch: torchOn }]
+        advanced: [
+            { focusMode: "continuous" },
+            { zoom: zoomControl.value },
+            { exposureMode: "continuous" }
+        ]
     });
 
     flashBtn.innerText = torchOn ? "❌ Apagar Lanterna" : "🔦 Ligar Lanterna";
