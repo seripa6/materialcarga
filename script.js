@@ -1,5 +1,5 @@
 const URL_SCRIPT = "https://script.google.com/macros/s/AKfycbwHqrVpsKxgQGbP8A_RsQitW4BwkKtRMjGEKnT9y-ssBmZzyFpwR2Gdc7sJ6Kd711RK/exec";
-const beep = new Audio("https://www.soundjay.com/buttons/sounds/beep-07.mp3");
+const beep = new Audio("data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA=");
 
 
 let codeReader = null;
@@ -32,10 +32,7 @@ async function startScanner() {
     codeReader = new ZXing.BrowserMultiFormatReader(undefined, {
         tryHarder: true, // melhora leitura de códigos pequenos
         formats: [
-            ZXing.BarcodeFormat.CODE_128,
-            ZXing.BarcodeFormat.CODE_39,
-            ZXing.BarcodeFormat.EAN_13,
-            ZXing.BarcodeFormat.EAN_8
+            ZXing.BarcodeFormat.CODE_128
         ]
     });
 
@@ -43,13 +40,24 @@ async function startScanner() {
         const videoElement = document.getElementById('scanner-video');
 
         stream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: "environment" }
+            video: {
+                facingMode: "environment",
+                width: { ideal: 1920 },
+                height: { ideal: 1080 }
+            }
         });
 
         videoElement.srcObject = stream;
         videoElement.play();
 
         track = stream.getVideoTracks()[0];
+        await track.applyConstraints({
+            advanced: [
+                { focusMode: "continuous" },
+                { exposureMode: "continuous" },
+                { zoom: zoomControl.value }
+            ]
+        });
         const capabilities = track.getCapabilities();
 
         // Configura range do zoom se suportado
@@ -64,16 +72,22 @@ async function startScanner() {
         }
 
         // Começa leitura contínua
-        codeReader.decodeFromVideoDevice(null, videoElement, (result, err) => {
-            if (result) {
-                beep.play(); // <-- TOCA O BEEP
 
-                document.getElementById('numeroChamado').value = result.text;
-                document.getElementById('mensagem').innerText = "Código Detectado!";
-                document.getElementById('mensagem').style.color = "green";
-                stopScanner();
-            }
-        });
+        const hints = new Map();
+        hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
+
+        codeReader = new ZXing.BrowserMultiFormatReader(hints);
+        codeReader.decodeFromVideoDevice(null, videoElement, { area: { x: 0.2, y: 0.2, width: 0.6, height: 0.6 } }, (result, err) => 
+            {
+                if (result) {
+                    beep.play(); // <-- TOCA O BEEP
+
+                    document.getElementById('numeroChamado').value = result.text;
+                    document.getElementById('mensagem').innerText = "Código Detectado!";
+                    document.getElementById('mensagem').style.color = "green";
+                    stopScanner();
+                }
+            });
 
         document.getElementById('mensagem').innerText = "Aponte a câmera para o código...";
         document.getElementById('mensagem').style.color = "blue";
@@ -167,4 +181,3 @@ document.getElementById('formulario').addEventListener('submit', function (e) {
             document.getElementById('mensagem').style.color = "red";
         });
 });
-
