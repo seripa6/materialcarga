@@ -3,10 +3,24 @@ const URL_SCRIPT = "https://script.google.com/macros/s/AKfycbwHqrVpsKxgQGbP8A_Rs
 
 let codeReader = null;
 let stream = null;
+let track = null;
+let torchOn = false;
 
 // Botões
 document.getElementById('start-camera-btn').addEventListener('click', startScanner);
 document.getElementById('stop-scan-btn').addEventListener('click', stopScanner);
+
+// --- Criar Botões (Zoom e Lanterna) dentro do scanner ---
+const scannerContainer = document.getElementById("scanner-container");
+
+scannerContainer.insertAdjacentHTML("beforeend", `
+    <button id="flash-btn" style="margin-top:10px;width:100%;">🔦 Ligar Lanterna</button>
+    <label style="margin-top:10px; display:block;">Zoom:</label>
+    <input type="range" id="zoomControl" min="1" max="5" step="0.1" value="1" style="width:100%;">
+`);
+
+const flashBtn = document.getElementById("flash-btn");
+const zoomControl = document.getElementById("zoomControl");
 
 // -------------------------
 // INICIAR LEITOR ZXING
@@ -19,7 +33,6 @@ async function startScanner() {
     try {
         const videoElement = document.getElementById('scanner-video');
 
-        // Abre a câmera traseira
         stream = await navigator.mediaDevices.getUserMedia({
             video: { facingMode: "environment" }
         });
@@ -27,7 +40,21 @@ async function startScanner() {
         videoElement.srcObject = stream;
         videoElement.play();
 
-        // Começa a leitura contínua
+        track = stream.getVideoTracks()[0];
+        const capabilities = track.getCapabilities();
+
+        // Configura range do zoom se suportado
+        if (capabilities.zoom) {
+            zoomControl.min = capabilities.zoom.min;
+            zoomControl.max = capabilities.zoom.max;
+            zoomControl.step = capabilities.zoom.step || 0.1;
+            zoomControl.value = capabilities.zoom.min;
+            zoomControl.disabled = false;
+        } else {
+            zoomControl.disabled = true;
+        }
+
+        // Começa leitura contínua
         codeReader.decodeFromVideoDevice(null, videoElement, (result, err) => {
             if (result) {
                 document.getElementById('numeroChamado').value = result.text;
@@ -37,7 +64,7 @@ async function startScanner() {
             }
         });
 
-        document.getElementById('mensagem').innerText = "Aponte a câmera para o código de barras...";
+        document.getElementById('mensagem').innerText = "Aponte a câmera para o código...";
         document.getElementById('mensagem').style.color = "blue";
 
     } catch (error) {
@@ -45,6 +72,34 @@ async function startScanner() {
         document.getElementById('mensagem').style.color = "red";
     }
 }
+
+// -------------------------
+// CONTROLE DA LANTERNA
+// -------------------------
+flashBtn.addEventListener("click", async () => {
+    if (!track || !track.getCapabilities().torch) {
+        alert("Seu dispositivo não suporta lanterna.");
+        return;
+    }
+
+    torchOn = !torchOn;
+
+    await track.applyConstraints({
+        advanced: [{ torch: torchOn }]
+    });
+
+    flashBtn.innerText = torchOn ? "❌ Apagar Lanterna" : "🔦 Ligar Lanterna";
+});
+
+// -------------------------
+// CONTROLE DE ZOOM
+// -------------------------
+zoomControl.addEventListener("input", async () => {
+    if (!track) return;
+    await track.applyConstraints({
+        advanced: [{ zoom: zoomControl.value }]
+    });
+});
 
 // -------------------------
 // PARAR O SCANNER
@@ -61,6 +116,7 @@ function stopScanner() {
     }
 
     document.getElementById('scanner-container').style.display = 'none';
+    torchOn = false;
 }
 
 // -------------------------
@@ -78,11 +134,7 @@ document.getElementById('formulario').addEventListener('submit', function (e) {
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
         },
-        body: new URLSearchParams({
-            numeroChamado,
-            nome,
-            motivo
-        })
+        body: new URLSearchParams({ numeroChamado, nome, motivo })
     })
         .then(response => response.json())
         .then(data => {
