@@ -9,7 +9,22 @@
 </head>
 
 <body>
-    APAGA
+    <h2>Formulário de Conferência</h2>
+    <form id="formulario">
+        <label for="numeroChamado">Número do Chamado (Código de Barras):</label>
+        <input type="text" id="numeroChamado" name="numeroChamado" required>
+        <button type="button" id="start-camera-btn">Iniciar Câmera</button>
+
+        <label for="nome">Nome:</label>
+        <input type="text" id="nome" name="nome" required>
+
+        <label for="motivo">Motivo:</label>
+        <textarea id="motivo" name="motivo" rows="4" required></textarea>
+
+        <button type="submit">Enviar</button>
+    </form>
+    <div id="mensagem"></div>
+
     <div id="scanner-container">
         <video id="scanner-video" style="width:100%;border:1px solid #ccc;"></video><br>
         <button type="button" id="stop-scan-btn">Parar Câmera</button>
@@ -19,6 +34,5 @@
     <script src="https://unpkg.com/@zxing/library@latest"></script>
     <script src="script.js"></script>
 </body>
-
 
 </html>
