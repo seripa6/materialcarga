@@ -1,4 +1,3 @@
-// Substitua pela URL do seu web app implantado no Google Apps Script
 const URL_SCRIPT = "https://script.google.com/macros/s/AKfycbwHqrVpsKxgQGbP8A_RsQitW4BwkKtRMjGEKnT9y-ssBmZzyFpwR2Gdc7sJ6Kd711RK/exec";
 const beep = new Audio("https://www.soundjay.com/buttons/sounds/beep-07.mp3");
 
@@ -168,3 +167,4 @@ document.getElementById('formulario').addEventListener('submit', function (e) {
             document.getElementById('mensagem').style.color = "red";
         });
 });
+
