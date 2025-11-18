@@ -1,7 +1,6 @@
 const URL_SCRIPT = "https://script.google.com/macros/s/AKfycbwHqrVpsKxgQGbP8A_RsQitW4BwkKtRMjGEKnT9y-ssBmZzyFpwR2Gdc7sJ6Kd711RK/exec";
 const beep = new Audio("data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA=");
 
-
 let codeReader = null;
 let stream = null;
 let track = null;
@@ -181,3 +180,4 @@ document.getElementById('formulario').addEventListener('submit', function (e) {
             document.getElementById('mensagem').style.color = "red";
         });
 });
+
