@@ -1,5 +1,5 @@
 // Substitua pela URL do seu web app implantado no Google Apps Script
-const URL_SCRIPT = "https://script.google.com/macros/s/SEU_DEPLOYMENT_ID/exec";
+const URL_SCRIPT = "https://script.google.com/macros/s/AKfycbwHqrVpsKxgQGbP8A_RsQitW4BwkKtRMjGEKnT9y-ssBmZzyFpwR2Gdc7sJ6Kd711RK/exec";
 
 let scannerInitialized = false;
 let detectionActive = false;
@@ -30,29 +30,25 @@ function startCamera() {
             type: "LiveStream",
             target: document.querySelector('#scanner-video'),
             constraints: {
-                width: 640,
-                height: 480,
-                facingMode: "environment" // Usa câmera traseira em dispositivos móveis
+                facingMode: "environment"
             }
         },
-        locator: {
-            patchSize: "medium",
-            halfSample: true
-        },
-        numOfWorkers: 2,
         decoder: {
-            readers: ["code_128_reader", "ean_reader", "ean_8_reader", "code_39_reader", "upc_reader", "upc_e_reader"] // Tipos de códigos suportados
+            readers: ["code_128_reader", "ean_reader", "code_39_reader"]
         },
-        locate: false  // Desabilitado inicialmente para apenas mostrar o vídeo
-    }, function (err) {
+        locate: true
+    }, function(err) {
         if (err) {
-            console.log(err);
-            document.getElementById('mensagem').innerText = 'Erro ao iniciar câmera: ' + err.message;
+            document.getElementById('mensagem').innerText =
+                "Erro ao iniciar câmera: " + err;
+            document.getElementById('mensagem').style.color = "red";
             return;
         }
+
         Quagga.start();
-        document.getElementById('mensagem').innerText = 'Câmera iniciada. Clique em "Detectar Código" para escanear.';
-        document.getElementById('mensagem').style.color = 'blue';
+        document.getElementById('mensagem').innerText =
+            "Câmera iniciada. Clique em Detectar Código.";
+        document.getElementById('mensagem').style.color = "blue";
     });
 }
 
