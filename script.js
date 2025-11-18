@@ -1,17 +1,18 @@
 const URL_SCRIPT = "https://script.google.com/macros/s/AKfycbwHqrVpsKxgQGbP8A_RsQitW4BwkKtRMjGEKnT9y-ssBmZzyFpwR2Gdc7sJ6Kd711RK/exec";
-const beep = new Audio("data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA=");
-
 
 let codeReader = null;
 let stream = null;
 let track = null;
 let torchOn = false;
 
+// Som offline (sem internet)
+const beep = new Audio("data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA=");
+
 // Botões
 document.getElementById('start-camera-btn').addEventListener('click', startScanner);
 document.getElementById('stop-scan-btn').addEventListener('click', stopScanner);
 
-// --- Criar Botões (Zoom e Lanterna) dentro do scanner ---
+// Criar controles
 const scannerContainer = document.getElementById("scanner-container");
 
 scannerContainer.insertAdjacentHTML("beforeend", `
@@ -23,18 +24,15 @@ scannerContainer.insertAdjacentHTML("beforeend", `
 const flashBtn = document.getElementById("flash-btn");
 const zoomControl = document.getElementById("zoomControl");
 
-// -------------------------
-// INICIAR LEITOR ZXING
-// -------------------------
 async function startScanner() {
     document.getElementById('scanner-container').style.display = 'block';
 
-    codeReader = new ZXing.BrowserMultiFormatReader(undefined, {
-        tryHarder: true, // melhora leitura de códigos pequenos
-        formats: [
-            ZXing.BarcodeFormat.CODE_128
-        ]
-    });
+    const hints = new Map();
+    hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
+    hints.set(ZXing.DecodeHintType.ASSUME_GS1, true);
+    hints.set(ZXing.DecodeHintType.PURE_BARCODE, true);
+
+    codeReader = new ZXing.BrowserMultiFormatReader(hints);
 
     try {
         const videoElement = document.getElementById('scanner-video');
@@ -42,8 +40,9 @@ async function startScanner() {
         stream = await navigator.mediaDevices.getUserMedia({
             video: {
                 facingMode: "environment",
-                width: { ideal: 1920 },
-                height: { ideal: 1080 }
+                width: { ideal: 4096 }, // 4K melhora muito códigos pequenos
+                height: { ideal: 2160 },
+                focusMode: "continuous"
             }
         });
 
@@ -51,43 +50,36 @@ async function startScanner() {
         videoElement.play();
 
         track = stream.getVideoTracks()[0];
-        await track.applyConstraints({
-            advanced: [
-                { focusMode: "continuous" },
-                { exposureMode: "continuous" },
-                { zoom: zoomControl.value }
-            ]
-        });
+
         const capabilities = track.getCapabilities();
 
-        // Configura range do zoom se suportado
+        // Zoom habilitado
         if (capabilities.zoom) {
             zoomControl.min = capabilities.zoom.min;
             zoomControl.max = capabilities.zoom.max;
-            zoomControl.step = capabilities.zoom.step || 0.1;
             zoomControl.value = capabilities.zoom.min;
             zoomControl.disabled = false;
-        } else {
-            zoomControl.disabled = true;
         }
 
-        // Começa leitura contínua
+        // Autofocus contínuo
+        setInterval(() => {
+            if (track) {
+                track.applyConstraints({
+                    advanced: [{ focusMode: "continuous" }]
+                });
+            }
+        }, 1200);
 
-        const hints = new Map();
-        hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
-
-        codeReader = new ZXing.BrowserMultiFormatReader(hints);
-        codeReader.decodeFromVideoDevice(null, videoElement, (result, err) =>
-            {
-                if (result) {
-                    beep.play(); // <-- TOCA O BEEP
-
-                    document.getElementById('numeroChamado').value = result.text;
-                    document.getElementById('mensagem').innerText = "Código Detectado!";
-                    document.getElementById('mensagem').style.color = "green";
-                    stopScanner();
-                }
-            });
+        // Leitura contínua
+        codeReader.decodeFromVideoDevice(null, videoElement, (result, err) => {
+            if (result) {
+                beep.play();
+                document.getElementById('numeroChamado').value = result.text;
+                document.getElementById('mensagem').innerText = "Código Detectado!";
+                document.getElementById('mensagem').style.color = "green";
+                stopScanner();
+            }
+        });
 
         document.getElementById('mensagem').innerText = "Aponte a câmera para o código...";
         document.getElementById('mensagem').style.color = "blue";
@@ -98,9 +90,7 @@ async function startScanner() {
     }
 }
 
-// -------------------------
-// CONTROLE DA LANTERNA
-// -------------------------
+// Lanterna
 flashBtn.addEventListener("click", async () => {
     if (!track || !track.getCapabilities().torch) {
         alert("Seu dispositivo não suporta lanterna.");
@@ -108,21 +98,12 @@ flashBtn.addEventListener("click", async () => {
     }
 
     torchOn = !torchOn;
-
-    await track.applyConstraints({
-        advanced: [
-            { focusMode: "continuous" },
-            { zoom: zoomControl.value },
-            { exposureMode: "continuous" }
-        ]
-    });
+    await track.applyConstraints({ advanced: [{ torch: torchOn }] });
 
     flashBtn.innerText = torchOn ? "❌ Apagar Lanterna" : "🔦 Ligar Lanterna";
 });
 
-// -------------------------
-// CONTROLE DE ZOOM
-// -------------------------
+// Zoom
 zoomControl.addEventListener("input", async () => {
     if (!track) return;
     await track.applyConstraints({
@@ -130,9 +111,7 @@ zoomControl.addEventListener("input", async () => {
     });
 });
 
-// -------------------------
-// PARAR O SCANNER
-// -------------------------
+// Parar scanner
 function stopScanner() {
     if (stream) {
         stream.getTracks().forEach(track => track.stop());
@@ -148,9 +127,7 @@ function stopScanner() {
     torchOn = false;
 }
 
-// -------------------------
-// ENVIO DO FORMULÁRIO
-// -------------------------
+// Envio do formulário
 document.getElementById('formulario').addEventListener('submit', function (e) {
     e.preventDefault();
 
@@ -160,24 +137,22 @@ document.getElementById('formulario').addEventListener('submit', function (e) {
 
     fetch(URL_SCRIPT, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-        },
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: new URLSearchParams({ numeroChamado, nome, motivo })
     })
-        .then(response => response.json())
-        .then(data => {
-            if (data.status === 'sucesso') {
-                document.getElementById('mensagem').innerText = 'Dados enviados com sucesso!';
-                document.getElementById('mensagem').style.color = 'green';
-                document.getElementById('formulario').reset();
-            } else {
-                document.getElementById('mensagem').innerText = 'Erro: ' + data.mensagem;
-                document.getElementById('mensagem').style.color = "red";
-            }
-        })
-        .catch(error => {
-            document.getElementById('mensagem').innerText = 'Erro na requisição: ' + error.message;
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'sucesso') {
+            document.getElementById('mensagem').innerText = 'Dados enviados com sucesso!';
+            document.getElementById('mensagem').style.color = 'green';
+            document.getElementById('formulario').reset();
+        } else {
+            document.getElementById('mensagem').innerText = 'Erro: ' + data.mensagem;
             document.getElementById('mensagem').style.color = "red";
-        });
+        }
+    })
+    .catch(error => {
+        document.getElementById('mensagem').innerText = 'Erro na requisição: ' + error.message;
+        document.getElementById('mensagem').style.color = "red";
+    });
 });
