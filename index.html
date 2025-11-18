@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Formulário de Conferência</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h2>Formulário de Conferência</h2>
+    <form id="formulario">
+        <label for="numeroChamado">Número do Chamado (Código de Barras):</label>
+        <input type="text" id="numeroChamado" name="numeroChamado" required>
+        <button type="button" id="scan-btn">Escanear Código de Barras</button>
+
+        <label for="nome">Nome:</label>
+        <input type="text" id="nome" name="nome" required>
+
+        <label for="motivo">Motivo:</label>
+        <textarea id="motivo" name="motivo" rows="4" required></textarea>
+
+        <button type="submit">Enviar</button>
+    </form>
+    <div id="mensagem"></div>
+
+    <div id="scanner-container">
+        <video id="scanner-video"></video>
+        <button type="button" id="stop-scan-btn">Parar Escaneamento</button>
+    </div>
+
+    <!-- Incluir QuaggaJS via CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/quagga@0.12.1/dist/quagga.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
