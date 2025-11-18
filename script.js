@@ -1,72 +1,96 @@
-const codeReader = new ZXingBrowser.BrowserMultiFormatReader();
-let lastCode = "";
-let photoBase64 = "";
+        // Substitua pela URL do seu web app implantado no Google Apps Script
+        const URL_SCRIPT = "https://script.google.com/macros/s/AKfycbwHqrVpsKxgQGbP8A_RsQitW4BwkKtRMjGEKnT9y-ssBmZzyFpwR2Gdc7sJ6Kd711RK/exec";
 
-const beep = new Audio("beep.mp3"); // <-- arquivo local
-const output = document.getElementById("output");
-const statusMsg = document.getElementById("status");
+        let scannerActive = false;
 
-document.getElementById("btnStart").addEventListener("click", async () => {
-    const preview = document.getElementById("camera");
-    const cams = await ZXingBrowser.BrowserCodeReader.listVideoInputDevices();
-    if (!cams.length) return alert("Nenhuma câmera encontrada");
+        document.getElementById('scan-btn').addEventListener('click', function() {
+            if (!scannerActive) {
+                startScanner();
+            }
+        });
 
-    codeReader.decodeFromVideoDevice(cams[0].deviceId, preview, (result) => {
-        if (result && result.text !== lastCode) {
-            lastCode = result.text;
-            output.textContent = lastCode;
-            beep.play().catch(()=>{});
+        document.getElementById('stop-scan-btn').addEventListener('click', function() {
+            stopScanner();
+        });
+
+        function startScanner() {
+            document.getElementById('scanner-container').style.display = 'block';
+            scannerActive = true;
+
+            Quagga.init({
+                inputStream: {
+                    name: "Live",
+                    type: "LiveStream",
+                    target: document.querySelector('#scanner-video'),
+                    constraints: {
+                        width: 640,
+                        height: 480,
+                        facingMode: "environment" // Usa câmera traseira em dispositivos móveis
+                    }
+                },
+                locator: {
+                    patchSize: "medium",
+                    halfSample: true
+                },
+                numOfWorkers: 2,
+                decoder: {
+                    readers: ["code_128_reader", "ean_reader", "ean_8_reader", "code_39_reader", "upc_reader", "upc_e_reader"] // Tipos de códigos suportados
+                },
+                locate: true
+            }, function(err) {
+                if (err) {
+                    console.log(err);
+                    document.getElementById('mensagem').innerText = 'Erro ao iniciar câmera: ' + err.message;
+                    return;
+                }
+                Quagga.start();
+            });
+
+            Quagga.onDetected(function(result) {
+                const code = result.codeResult.code;
+                document.getElementById('numeroChamado').value = code;
+                stopScanner();
+                document.getElementById('mensagem').innerText = 'Código detectado: ' + code;
+                document.getElementById('mensagem').style.color = 'green';
+            });
         }
-    });
-});
 
-// Entrada manual
-document.getElementById("btnUseManual").addEventListener("click", () => {
-    const typed = document.getElementById("manualInput").value.trim();
-    if (!typed) return alert("Digite um código primeiro.");
-    lastCode = typed;
-    output.textContent = lastCode;
-    beep.play().catch(()=>{});
-});
+        function stopScanner() {
+            Quagga.stop();
+            document.getElementById('scanner-container').style.display = 'none';
+            scannerActive = false;
+        }
 
-// Foto
-document.getElementById("btnPhoto").addEventListener("click", () => {
-    const video = document.getElementById("camera");
-    const canvas = document.getElementById("snapshot");
-    const ctx = canvas.getContext("2d");
+        document.getElementById('formulario').addEventListener('submit', function(e) {
+            e.preventDefault();
 
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    ctx.drawImage(video, 0, 0);
+            const numeroChamado = document.getElementById('numeroChamado').value;
+            const nome = document.getElementById('nome').value;
+            const motivo = document.getElementById('motivo').value;
 
-    photoBase64 = canvas.toDataURL("image/jpeg");
-    alert("Foto capturada!");
-});
-
-document.getElementById("btnSend").addEventListener("click", () => {
-
-    if (!lastCode) return alert("Nenhum código para enviar!");
-
-    statusMsg.textContent = "Enviando...";
-
-    fetch("https://script.google.com/macros/s/AKfycbwHqrVpsKxgQGbP8A_RsQitW4BwkKtRMjGEKnT9y-ssBmZzyFpwR2Gdc7sJ6Kd711RK/exec", {
-        method: "POST",
-        mode: "cors",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-            barcode: lastCode,
-            photo: photoBase64
-        })
-    })
-    .then(r => r.text())
-    .then(msg => {
-        statusMsg.textContent = "✔ Enviado!";
-        output.textContent = "---";
-        document.getElementById("manualInput").value = "";
-        lastCode = "";
-        photoBase64 = "";
-    })
-    .catch(err => {
-        statusMsg.textContent = "❌ Erro: " + err;
-    });
-});
+            // Enviar dados via POST
+            fetch(URL_SCRIPT, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({
+                    numeroChamado: numeroChamado,
+                    nome: nome,
+                    motivo: motivo
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'sucesso') {
+                    document.getElementById('mensagem').innerText = 'Dados enviados com sucesso!';
+                    document.getElementById('mensagem').style.color = 'green';
+                    document.getElementById('formulario').reset();
+                } else {
+                    document.getElementById('mensagem').innerText = 'Erro: ' + data.mensagem;
+                }
+            })
+            .catch(error => {
+                document.getElementById('mensagem').innerText = 'Erro na requisição: ' + error.message;
+            });
+        });

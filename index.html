@@ -1,51 +1,35 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Scanner de Código</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Formulário de Conferência</title>
     <link rel="stylesheet" href="style.css">
-
-    <!-- Biblioteca ZXING -->
-    <script src="https://unpkg.com/@zxing/browser@latest"></script>
 </head>
-
 <body>
+    <h2>Formulário de Conferência</h2>
+    <form id="formulario">
+        <label for="numeroChamado">Número do Chamado (Código de Barras):</label>
+        <input type="text" id="numeroChamado" name="numeroChamado" required>
+        <button type="button" id="scan-btn">Escanear Código de Barras</button>
 
-<h2>📦 Leitor de Código + Envio para Planilha</h2>
+        <label for="nome">Nome:</label>
+        <input type="text" id="nome" name="nome" required>
 
-<div class="box">
-    <button id="btnStart">Iniciar Leitura</button>
-    <button id="btnStop">Parar</button>
-</div>
+        <label for="motivo">Motivo:</label>
+        <textarea id="motivo" name="motivo" rows="4" required></textarea>
 
-<video id="camera" style="width:100%;border:1px solid #ccc;"></video>
+        <button type="submit">Enviar</button>
+    </form>
+    <div id="mensagem"></div>
 
-<div class="reader">
-    <h3>Resultado:</h3>
-    <p id="output">---</p>
-</div>
+    <div id="scanner-container">
+        <video id="scanner-video"></video>
+        <button type="button" id="stop-scan-btn">Parar Escaneamento</button>
+    </div>
 
-<hr>
-
-<h3>Entrada Manual</h3>
-<input id="manualInput" type="text" placeholder="Digite o código">
-<button id="btnUseManual">Enviar Manual</button>
-
-<hr>
-
-<h3>Capturar Foto</h3>
-<button id="btnPhoto">📸 Capturar Foto</button>
-<canvas id="snapshot" hidden></canvas>
-
-<hr>
-
-<button id="btnSend">📤 Enviar para Planilha</button>
-
-<p id="status"></p>
-
-<audio id="beepSound" src="https://www.soundjay.com/buttons/sounds/beep-07.mp3" preload="auto"></audio>
-
-<script src="script.js"></script>
+    <!-- Incluir QuaggaJS via CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/quagga@0.12.1/dist/quagga.min.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>
