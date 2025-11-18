@@ -1,18 +1,16 @@
 const URL_SCRIPT = "https://script.google.com/macros/s/AKfycbwHqrVpsKxgQGbP8A_RsQitW4BwkKtRMjGEKnT9y-ssBmZzyFpwR2Gdc7sJ6Kd711RK/exec";
+const beep = new Audio("data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA=");
 
 let codeReader = null;
 let stream = null;
 let track = null;
 let torchOn = false;
 
-// Som offline (sem internet)
-const beep = new Audio("data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA=");
-
 // Botões
 document.getElementById('start-camera-btn').addEventListener('click', startScanner);
 document.getElementById('stop-scan-btn').addEventListener('click', stopScanner);
 
-// Criar controles
+// Criação dos controles extras
 const scannerContainer = document.getElementById("scanner-container");
 
 scannerContainer.insertAdjacentHTML("beforeend", `
@@ -24,13 +22,28 @@ scannerContainer.insertAdjacentHTML("beforeend", `
 const flashBtn = document.getElementById("flash-btn");
 const zoomControl = document.getElementById("zoomControl");
 
+// -------------------------
+// INICIAR LEITOR ZXING
+// -------------------------
 async function startScanner() {
     document.getElementById('scanner-container').style.display = 'block';
 
+    const supportedFormats = [
+        ZXing.BarcodeFormat.CODE_128,  // prioriza NavesFont
+        ZXing.BarcodeFormat.CODE_39,
+        ZXing.BarcodeFormat.EAN_13,
+        ZXing.BarcodeFormat.EAN_8,
+        ZXing.BarcodeFormat.ITF,
+        ZXing.BarcodeFormat.UPC_A,
+        ZXing.BarcodeFormat.UPC_E,
+        ZXing.BarcodeFormat.CODABAR,
+        ZXing.BarcodeFormat.QR_CODE
+    ];
+
     const hints = new Map();
     hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
+    hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, supportedFormats);
     hints.set(ZXing.DecodeHintType.ASSUME_GS1, true);
-    hints.set(ZXing.DecodeHintType.PURE_BARCODE, true);
 
     codeReader = new ZXing.BrowserMultiFormatReader(hints);
 
@@ -40,9 +53,8 @@ async function startScanner() {
         stream = await navigator.mediaDevices.getUserMedia({
             video: {
                 facingMode: "environment",
-                width: { ideal: 4096 }, // 4K melhora muito códigos pequenos
-                height: { ideal: 2160 },
-                focusMode: "continuous"
+                width: { ideal: 1920 },
+                height: { ideal: 1080 }
             }
         });
 
@@ -51,27 +63,28 @@ async function startScanner() {
 
         track = stream.getVideoTracks()[0];
 
+        await track.applyConstraints({
+            advanced: [
+                { focusMode: "continuous" },
+                { exposureMode: "continuous" },
+                { zoom: zoomControl.value }
+            ]
+        });
+
         const capabilities = track.getCapabilities();
 
-        // Zoom habilitado
         if (capabilities.zoom) {
             zoomControl.min = capabilities.zoom.min;
             zoomControl.max = capabilities.zoom.max;
+            zoomControl.step = capabilities.zoom.step || 0.1;
             zoomControl.value = capabilities.zoom.min;
             zoomControl.disabled = false;
+        } else {
+            zoomControl.disabled = true;
         }
 
-        // Autofocus contínuo
-        setInterval(() => {
-            if (track) {
-                track.applyConstraints({
-                    advanced: [{ focusMode: "continuous" }]
-                });
-            }
-        }, 1200);
-
-        // Leitura contínua
-        codeReader.decodeFromVideoDevice(null, videoElement, (result, err) => {
+        // O scanner agora tenta intensivamente
+        codeReader.decodeFromVideoDevice(null, videoElement, async (result, err) => {
             if (result) {
                 beep.play();
                 document.getElementById('numeroChamado').value = result.text;
@@ -90,7 +103,9 @@ async function startScanner() {
     }
 }
 
-// Lanterna
+// -------------------------
+// CONTROLE DA LANTERNA
+// -------------------------
 flashBtn.addEventListener("click", async () => {
     if (!track || !track.getCapabilities().torch) {
         alert("Seu dispositivo não suporta lanterna.");
@@ -98,12 +113,17 @@ flashBtn.addEventListener("click", async () => {
     }
 
     torchOn = !torchOn;
-    await track.applyConstraints({ advanced: [{ torch: torchOn }] });
+
+    await track.applyConstraints({
+        advanced: [{ torch: torchOn }]
+    });
 
     flashBtn.innerText = torchOn ? "❌ Apagar Lanterna" : "🔦 Ligar Lanterna";
 });
 
-// Zoom
+// -------------------------
+// CONTROLE DE ZOOM
+// -------------------------
 zoomControl.addEventListener("input", async () => {
     if (!track) return;
     await track.applyConstraints({
@@ -111,7 +131,9 @@ zoomControl.addEventListener("input", async () => {
     });
 });
 
-// Parar scanner
+// -------------------------
+// PARAR O SCANNER
+// -------------------------
 function stopScanner() {
     if (stream) {
         stream.getTracks().forEach(track => track.stop());
@@ -127,7 +149,9 @@ function stopScanner() {
     torchOn = false;
 }
 
-// Envio do formulário
+// -------------------------
+// ENVIO DO FORMULÁRIO
+// -------------------------
 document.getElementById('formulario').addEventListener('submit', function (e) {
     e.preventDefault();
 
@@ -137,22 +161,24 @@ document.getElementById('formulario').addEventListener('submit', function (e) {
 
     fetch(URL_SCRIPT, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
         body: new URLSearchParams({ numeroChamado, nome, motivo })
     })
-    .then(response => response.json())
-    .then(data => {
-        if (data.status === 'sucesso') {
-            document.getElementById('mensagem').innerText = 'Dados enviados com sucesso!';
-            document.getElementById('mensagem').style.color = 'green';
-            document.getElementById('formulario').reset();
-        } else {
-            document.getElementById('mensagem').innerText = 'Erro: ' + data.mensagem;
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'sucesso') {
+                document.getElementById('mensagem').innerText = 'Dados enviados com sucesso!';
+                document.getElementById('mensagem').style.color = 'green';
+                document.getElementById('formulario').reset();
+            } else {
+                document.getElementById('mensagem').innerText = 'Erro: ' + data.mensagem;
+                document.getElementById('mensagem').style.color = "red";
+            }
+        })
+        .catch(error => {
+            document.getElementById('mensagem').innerText = 'Erro na requisição: ' + error.message;
             document.getElementById('mensagem').style.color = "red";
-        }
-    })
-    .catch(error => {
-        document.getElementById('mensagem').innerText = 'Erro na requisição: ' + error.message;
-        document.getElementById('mensagem').style.color = "red";
-    });
+        });
 });
