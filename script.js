@@ -5,7 +5,9 @@ let track = null;
 let codeReader = null;
 let scanning = false;
 
-const beep = new Audio("data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA=");
+const beep = new Audio(
+    "data:audio/wav;base64,UklGRkIAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQgAAAAA//8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A/wD/AP8A"
+);
 
 const video = document.getElementById("scanner-video");
 const startBtn = document.getElementById("start-camera-btn");
@@ -17,63 +19,84 @@ const scannerBox = document.getElementById("scanner-container");
 
 startBtn.onclick = startScanner;
 stopBtn.onclick = stopScanner;
-restartBtn.onclick = () => { scanning = true; };
+restartBtn.onclick = restartScan;
 flashBtn.onclick = toggleFlash;
 zoomControl.oninput = setZoom;
 
+
 async function startScanner() {
-    scannerBox.style.display = "block";
-    const { BrowserMultiFormatReader } = ZXing;
+    try {
+        scannerBox.style.display = "block";
+        scanning = true;
 
-    codeReader = new BrowserMultiFormatReader();
-    scanning = true;
+        codeReader = new ZXingBrowser.BrowserMultiFormatReader();
 
-    stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-            facingMode: { ideal: "environment" },
-            width: { ideal: 1920 },
-            height: { ideal: 1080 }
-        }
-    });
+        stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: "environment" }
+        });
 
-    video.srcObject = stream;
-    video.setAttribute("playsinline", true);
-    await video.play();
+        video.srcObject = stream;
+        await video.play();
 
-    track = stream.getVideoTracks()[0];
+        track = stream.getVideoTracks()[0];
 
-    codeReader.decodeFromVideoDevice(null, video, (result, err) => {
-        if (result && scanning) {
-            scanning = false;
-            beep.play();
-            document.getElementById("numeroChamado").value = result.text;
-            document.getElementById("mensagem").textContent = "Código detectado!";
-            document.getElementById("mensagem").style.color = "green";
-        }
-    });
+        setupZoom();
 
-    setupZoom();
+        codeReader.decodeFromVideoDevice(null, video, (result, err) => {
+            if (result && scanning) {
+                scanning = false;
+                beep.play();
+                document.getElementById("numeroChamado").value = result.text;
+                document.getElementById("mensagem").innerText = "Código detectado!";
+                document.getElementById("mensagem").style.color = "green";
+            }
+        });
+
+    } catch (err) {
+        alert("Erro ao acessar câmera: " + err);
+        console.error(err);
+    }
 }
 
 function stopScanner() {
     scanning = false;
+
+    if (codeReader) codeReader.reset();
     if (stream) stream.getTracks().forEach(t => t.stop());
+
     scannerBox.style.display = "none";
 }
 
-async function toggleFlash() {
-    if (!track.getCapabilities().torch) return alert("Lanterna não suportada.");
+function restartScan() {
+    scanning = true;
+    document.getElementById("mensagem").innerText = "Escaneando...";
+    document.getElementById("mensagem").style.color = "black";
+}
 
-    const torchEnabled = flashBtn.dataset.state !== "on";
-    await track.applyConstraints({ advanced: [{ torch: torchEnabled }] });
-    flashBtn.dataset.state = torchEnabled ? "on" : "off";
-    flashBtn.textContent = torchEnabled ? "❌ Apagar" : "🔦 Lanterna";
+async function toggleFlash() {
+    if (!track || !track.getCapabilities().torch) {
+        alert("Este dispositivo não suporta lanterna.");
+        return;
+    }
+
+    const state = flashBtn.dataset.state === "on";
+
+    await track.applyConstraints({ advanced: [{ torch: !state }] });
+
+    flashBtn.dataset.state = state ? "off" : "on";
+    flashBtn.innerText = state ? "🔦 Lanterna" : "❌ Apagar";
 }
 
 function setupZoom() {
-    const caps = track.getCapabilities();
-    if (!caps.zoom) return zoomControl.disabled = true;
+    if (!track) return;
 
+    const caps = track.getCapabilities();
+    if (!caps.zoom) {
+        zoomControl.disabled = true;
+        return;
+    }
+
+    zoomControl.disabled = false;
     zoomControl.min = caps.zoom.min;
     zoomControl.max = caps.zoom.max;
     zoomControl.value = caps.zoom.min;
@@ -83,7 +106,7 @@ async function setZoom() {
     await track.applyConstraints({ advanced: [{ zoom: zoomControl.value }] });
 }
 
-document.getElementById('formulario').addEventListener('submit', async e => {
+document.getElementById("formulario").addEventListener("submit", async e => {
     e.preventDefault();
 
     const data = new URLSearchParams({
@@ -92,12 +115,12 @@ document.getElementById('formulario').addEventListener('submit', async e => {
         motivo: motivo.value
     });
 
-    const res = await fetch(URL_SCRIPT, { method: 'POST', body: data });
+    const res = await fetch(URL_SCRIPT, { method: "POST", body: data });
     const json = await res.json();
 
     document.getElementById("mensagem").textContent = json.status === "sucesso"
-        ? "Enviado!"
-        : "Erro!";
+        ? "Enviado com sucesso!"
+        : "Erro ao enviar";
 
     if (json.status === "sucesso") e.target.reset();
 });
