@@ -10,29 +10,41 @@
 
 <body>
     <h2>Formulário de Conferência</h2>
+
     <form id="formulario">
-        <label for="numeroChamado">Número do Chamado (Código de Barras):</label>
-        <input type="text" id="numeroChamado" name="numeroChamado" required>
-        <button type="button" id="start-camera-btn">Iniciar Câmera</button>
+        
+        <label for="numeroChamado">Número do Chamado:</label>
+        <input type="text" id="numeroChamado" name="numeroChamado" readonly required>
+
+        <button type="button" id="start-camera-btn">📷 Ler Código de Barras</button>
 
         <label for="nome">Nome:</label>
-        <input type="text" id="nome" name="nome" required>
+        <input type="text" id="nome" required>
 
         <label for="motivo">Motivo:</label>
-        <textarea id="motivo" name="motivo" rows="4" required></textarea>
+        <textarea id="motivo" rows="3" required></textarea>
 
         <button type="submit">Enviar</button>
     </form>
-    <div id="mensagem"></div>
+
+    <p id="mensagem"></p>
 
     <div id="scanner-container">
-        <video id="scanner-video" style="width:100%;border:1px solid #ccc;"></video><br>
-        <button type="button" id="stop-scan-btn">Parar Câmera</button>
+        <video id="scanner-video" autoplay></video><br>
+
+        <div class="scanner-buttons">
+            <button id="flash-btn">🔦 Lanterna</button>
+            <button id="restart-scan-btn">🔄 Reescanear</button>
+            <button id="stop-scan-btn">❌ Fechar</button>
+        </div>
+
+        <label>Zoom:</label>
+        <input type="range" id="zoomControl" min="1" max="5" step="0.1">
     </div>
 
-    <!-- Incluir QuaggaJS via CDN -->
+    <canvas id="capture-canvas" hidden></canvas>
+
     <script src="https://unpkg.com/@zxing/library@0.19.1/dist/index.min.js"></script>
     <script src="script.js"></script>
 </body>
-
 </html>

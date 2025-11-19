@@ -1,93 +1,103 @@
 const URL_SCRIPT = "https://script.google.com/macros/s/AKfycbwHqrVpsKxgQGbP8A_RsQitW4BwkKtRMjGEKnT9y-ssBmZzyFpwR2Gdc7sJ6Kd711RK/exec";
 
-// beep offline curto
-const beep = new Audio("data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA=");
-
-let codeReader = null;
 let stream = null;
 let track = null;
-let torchOn = false;
-let processInterval = null;
+let codeReader = null;
+let scanning = false;
 
-// botões
-const startBtn = document.getElementById('start-camera-btn');
-const stopBtn = document.getElementById('stop-scan-btn');
+const beep = new Audio("data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA=");
 
-startBtn.addEventListener('click', startScanner);
-stopBtn.addEventListener('click', stopScanner);
+const video = document.getElementById("scanner-video");
+const startBtn = document.getElementById("start-camera-btn");
+const stopBtn = document.getElementById("stop-scan-btn");
+const restartBtn = document.getElementById("restart-scan-btn");
+const flashBtn = document.getElementById("flash-btn");
+const zoomControl = document.getElementById("zoomControl");
+const scannerBox = document.getElementById("scanner-container");
+
+startBtn.onclick = startScanner;
+stopBtn.onclick = stopScanner;
+restartBtn.onclick = () => { scanning = true; };
+flashBtn.onclick = toggleFlash;
+zoomControl.oninput = setZoom;
 
 async function startScanner() {
-    document.getElementById('scanner-container').style.display = 'block';
+    scannerBox.style.display = "block";
+    const { BrowserMultiFormatReader } = ZXing;
 
-    const { BrowserMultiFormatReader, BarcodeFormat, DecodeHintType } = ZXing;
+    codeReader = new BrowserMultiFormatReader();
+    scanning = true;
 
-    const supportedFormats = [
-        BarcodeFormat.CODE_128,
-        BarcodeFormat.CODE_39,
-        BarcodeFormat.EAN_13,
-        BarcodeFormat.EAN_8,
-        BarcodeFormat.ITF,
-        BarcodeFormat.UPC_A,
-        BarcodeFormat.UPC_E,
-        BarcodeFormat.CODABAR,
-    ];
+    stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+            facingMode: { ideal: "environment" },
+            width: { ideal: 1920 },
+            height: { ideal: 1080 }
+        }
+    });
 
-    const hints = new Map();
-    hints.set(DecodeHintType.TRY_HARDER, true);
-    hints.set(DecodeHintType.POSSIBLE_FORMATS, supportedFormats);
+    video.srcObject = stream;
+    video.setAttribute("playsinline", true);
+    await video.play();
 
-    codeReader = new BrowserMultiFormatReader(hints);
+    track = stream.getVideoTracks()[0];
 
-    try {
-        const videoElement = document.getElementById('scanner-video');
-        videoElement.setAttribute("playsinline", true); // necessário em iPhone
+    codeReader.decodeFromVideoDevice(null, video, (result, err) => {
+        if (result && scanning) {
+            scanning = false;
+            beep.play();
+            document.getElementById("numeroChamado").value = result.text;
+            document.getElementById("mensagem").textContent = "Código detectado!";
+            document.getElementById("mensagem").style.color = "green";
+        }
+    });
 
-        stream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: "environment" },
-            audio: false
-        });
-
-        videoElement.srcObject = stream;
-        await videoElement.play();
-
-        track = stream.getVideoTracks()[0];
-
-        // inicia decodificação contínua
-        codeReader.decodeFromVideoDevice(null, videoElement, (result, err) => {
-            if (result) {
-                onDetected(result.text);
-            }
-        });
-
-        document.getElementById('mensagem').innerText = "Aponte a câmera para o código...";
-        document.getElementById('mensagem').style.color = "blue";
-
-    } catch (error) {
-        document.getElementById('mensagem').innerText = "Erro ao acessar câmera: " + error;
-        document.getElementById('mensagem').style.color = "red";
-    }
-}
-
-function onDetected(text) {
-    try { beep.play(); } catch {}
-    document.getElementById('numeroChamado').value = text;
-    document.getElementById('mensagem').innerText = "Código Detectado!";
-    document.getElementById('mensagem').style.color = "green";
-    stopScanner();
+    setupZoom();
 }
 
 function stopScanner() {
-    if (processInterval) clearInterval(processInterval);
-
-    if (stream) {
-        stream.getTracks().forEach(track => track.stop());
-        stream = null;
-    }
-
-    if (codeReader) {
-        try { codeReader.reset(); } catch {}
-        codeReader = null;
-    }
-
-    document.getElementById('scanner-container').style.display = 'none';
+    scanning = false;
+    if (stream) stream.getTracks().forEach(t => t.stop());
+    scannerBox.style.display = "none";
 }
+
+async function toggleFlash() {
+    if (!track.getCapabilities().torch) return alert("Lanterna não suportada.");
+
+    const torchEnabled = flashBtn.dataset.state !== "on";
+    await track.applyConstraints({ advanced: [{ torch: torchEnabled }] });
+    flashBtn.dataset.state = torchEnabled ? "on" : "off";
+    flashBtn.textContent = torchEnabled ? "❌ Apagar" : "🔦 Lanterna";
+}
+
+function setupZoom() {
+    const caps = track.getCapabilities();
+    if (!caps.zoom) return zoomControl.disabled = true;
+
+    zoomControl.min = caps.zoom.min;
+    zoomControl.max = caps.zoom.max;
+    zoomControl.value = caps.zoom.min;
+}
+
+async function setZoom() {
+    await track.applyConstraints({ advanced: [{ zoom: zoomControl.value }] });
+}
+
+document.getElementById('formulario').addEventListener('submit', async e => {
+    e.preventDefault();
+
+    const data = new URLSearchParams({
+        numeroChamado: numeroChamado.value,
+        nome: nome.value,
+        motivo: motivo.value
+    });
+
+    const res = await fetch(URL_SCRIPT, { method: 'POST', body: data });
+    const json = await res.json();
+
+    document.getElementById("mensagem").textContent = json.status === "sucesso"
+        ? "Enviado!"
+        : "Erro!";
+
+    if (json.status === "sucesso") e.target.reset();
+});
