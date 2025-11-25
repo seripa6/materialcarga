@@ -1,9 +1,9 @@
-
 /* js/scanner.js — camera, ZXing and controls */
 let stream = null;
 let track = null;
-let codeReader = null;
 let scanning = false;
+
+let codeReader = new ZXingBrowser.BrowserMultiFormatReader();
 
 function playBeep() {
     try {
@@ -24,16 +24,18 @@ async function startScanner() {
         scannerBox.classList.remove('hidden');
         scanning = true;
 
-        numeroChamado.value = "";
-        document.getElementById("descricao").value = "";
-        document.getElementById("setor").value = "";
-        
-
-        // ZXing browser exposes ZXingBrowser
-        codeReader = new ZXingBrowser.BrowserMultiFormatReader();
+        // NÃO apaga caso o usuário esteja digitando manual
+        if (!numeroChamado.value) numeroChamado.value = "";
+        descricao.value = "";
+        setor.value = "";
 
         stream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } },
+            video: {
+                facingMode: { ideal: 'environment' },
+                width: { ideal: 1920 },
+                height: { ideal: 1080 },
+                frameRate: { ideal: 30, min: 15 }
+            },
             audio: false
         });
 
@@ -51,7 +53,11 @@ async function startScanner() {
                 playBeep();
                 navigator.vibrate?.(120);
 
-                const codigo = result.text.trim();
+                let codigo = result.text.trim();
+
+                // 🔥 GARANTE QUE OS ZEROS FIQUEM
+                codigo = codigo.padStart(10, "0");
+
                 numeroChamado.value = codigo;
                 setMessage("🔍 Buscando material...", "orange");
 
@@ -66,12 +72,11 @@ async function startScanner() {
                 const dados = await resp.json();
 
                 if (dados.status === "ok") {
-                    document.getElementById("descricao").value = dados.descricao;
-                    document.getElementById("setor").value = dados.setor;
+                    descricao.value = dados.descricao;
+                    setor.value = dados.setor;
                     setMessage("✔ Material encontrado!", "limegreen");
-
                 } else {
-                    setMessage("❌ Código não encontrado!", "red");
+                    setMessage("❌ Código não encontrado. Digite manualmente.", "red");
                 }
             }
         });
@@ -84,15 +89,15 @@ async function startScanner() {
 function stopScanner() {
     scanning = false;
 
-    try { codeReader?.reset(); } catch (e) { }
+    try { codeReader.reset(); } catch { }
 
     if (stream) {
         stream.getTracks().forEach(t => {
-            try { t.stop(); } catch (e) { }
+            try { t.stop(); } catch { }
         });
     }
 
-    scannerBox.classList.add('hidden'); // esconde scanner
+    scannerBox.classList.add('hidden');
 }
 
 function restartScan() {
@@ -106,14 +111,10 @@ async function toggleFlash() {
     if (!caps.torch) return alert('Lanterna não suportada.');
 
     const on = flashBtn.dataset.state !== 'on';
-    try {
-        await track.applyConstraints({ advanced: [{ torch: on }] });
-        flashBtn.dataset.state = on ? 'on' : 'off';
-        flashBtn.innerText = on ? '❌' : '🔦';
-    } catch (e) {
-        console.error('toggleFlash', e);
-        alert('Erro ao alternar lanterna.');
-    }
+    await track.applyConstraints({ advanced: [{ torch: on }] });
+
+    flashBtn.dataset.state = on ? 'on' : 'off';
+    flashBtn.innerText = on ? '❌' : '🔦';
 }
 
 function setupZoom() {
@@ -128,11 +129,12 @@ function setupZoom() {
 
 async function setZoom() {
     if (!track) return;
-    try { await track.applyConstraints({ advanced: [{ zoom: zoomControl.value }] }); } catch (e) { }
+    await track.applyConstraints({ advanced: [{ zoom: zoomControl.value }] });
 }
 
-// wire buttons (these assume ui.js loaded first)
-startBtn.onclick = async () => { try { playBeep(); } catch (e) { }; await startScanner(); };
+
+// BOTÕES
+startBtn.onclick = async () => { playBeep(); await startScanner(); };
 stopBtn.onclick = stopScanner;
 restartBtn.onclick = restartScan;
 flashBtn.onclick = toggleFlash;
