@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Scanner ZXing</title>
+  <title>Scanner ZXing Avançado</title>
   <style>
     body { margin: 0; background: #111; color: #fff; font-family: Arial; text-align: center; }
     video { width: 100%; max-width: 450px; border-radius: 12px; margin-top: 20px; background: #000; }
@@ -11,14 +11,14 @@
   </style>
 </head>
 <body>
-  <h1>📡 Scanner ZXing</h1>
+  <h1>📡 Scanner ZXing Avançado</h1>
   <video id="video" autoplay playsinline></video>
   <div id="result">Aguardando código...</div>
 
   <script src="https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.5/umd/zxing-browser.min.js"></script>
 
   <script>
-    window.onload = async () => {
+    async function startScanner() {
       const resultBox = document.getElementById("result");
       const videoElement = document.getElementById("video");
 
@@ -38,19 +38,31 @@
 
         const backCam = devices.find(d => /back|traseira/i.test(d.label)) || devices[0];
 
-        await codeReader.decodeFromVideoDevice(backCam.deviceId, videoElement, (result, err) => {
+        // Use decodeFromConstraints para definir resolução maior
+        const constraints = {
+          video: {
+            deviceId: backCam.deviceId,
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+            facingMode: "environment"
+          }
+        };
+
+        await codeReader.decodeFromConstraints(constraints, videoElement, (result, err) => {
           if (result) {
             resultBox.innerHTML = `<b>Código detectado:</b> ${result.text}`;
           } else if (err) {
-            // Apenas loga, não interrompe o scanner
-            console.warn(err);
+            console.warn(err); // erros temporários
           }
         });
+
       } catch (err) {
         console.error(err);
         resultBox.textContent = "Erro ao acessar câmera 😢";
       }
-    };
+    }
+
+    window.onload = startScanner;
   </script>
 </body>
 </html>
