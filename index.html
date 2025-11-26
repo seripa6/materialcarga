@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>Formulário de Conferência — App Mode</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="data:,">
+  <script src="https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.5/umd/zxing-browser.min.js"></script>
+
+</head>
+
+<body>
+  <main class="app">
+    <header class="topbar">
+      <h1>Conferência</h1>
+    </header>
+
+    <section class="form-area">
+      <form id="formulario">
+
+        <label for="numeroChamado">Código do Material</label>
+        <input id="numeroChamado" type="text" placeholder="Escaneie ou digite..." autocomplete="off" required>
+
+        <button id="confirmarManual" style="display:none; margin-top:10px;">
+          Confirmar Número Manual
+        </button>
+
+
+        <label for="descricao">Descrição:</label>
+        <input id="descricao" name="descricao" readonly>
+
+        <label for="setor">Setor:</label>
+        <input id="setor" name="setor" readonly>
+
+        <button type="button" id="start-camera-btn" class="primary">📷 Ler Código</button>
+
+        <label for="alterarSetor" class="cen">Alterar Setor (opcional)</label>
+        <select id="alterarSetor" name="novoSetor">
+          <option value="">— Não alterar —</option>
+          <option value="Copa">Copa</option>
+          <option value="Chefia">Chefia</option>
+          <option value="Protocolo">Protocolo</option>
+          <option value="Administração Chefia">Administração Chefia</option>
+        </select>
+
+        <button type="submit" class="primary">Enviar</button>
+      </form>
+
+      <p id="mensagem" class="mensagem"></p>
+    </section>
+
+    <section id="scanner-container" class="scanner-container hidden">
+      <video id="scanner-video" autoplay playsinline></video>
+
+      <div class="controls">
+        <button id="flash-btn" class="control">🔦</button>
+        <button id="restart-scan-btn" class="control">🔄</button>
+        <button id="stop-scan-btn" class="control">❌</button>
+      </div>
+
+      <label for="zoomControl" class="zoom-label">Zoom</label>
+      <input id="zoomControl" type="range" min="1" max="3" step="0.1" />
+
+      <div class="hint">Aponte a câmera para o código. Toque em 🔦 para lanterna (se disponível).</div>
+    </section>
+  </main>
+  <script src="js/ui.js"></script>
+  <script src="js/scanner.js"></script>
+  <script src="js/form.js"></script>
+
+</body>
+
+</html>
